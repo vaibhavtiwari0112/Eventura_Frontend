@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360">
+<style>
+.actor { font: 14px sans-serif; font-weight: 600; }
+.note { font: 12px sans-serif; fill: #0f172a; }
+.line { stroke: #94a3b8; stroke-width: 1; }
+.arrow { fill: #0f172a; }
+</style>
+<!-- Actors -->
+<text x="40" y="30" class="actor">Catalog</text>
+<text x="220" y="30" class="actor">Show Service</text>
+<text x="420" y="30" class="actor">Booking Service</text>
+<text x="620" y="30" class="actor">Payment Service</text>
+<text x="820" y="30" class="actor">Notification</text>
+
+
+<!-- Lifelines -->
+<line x1="80" y1="40" x2="80" y2="320" class="line" />
+<line x1="260" y1="40" x2="260" y2="320" class="line" />
+<line x1="460" y1="40" x2="460" y2="320" class="line" />
+<line x1="660" y1="40" x2="660" y2="320" class="line" />
+<line x1="860" y1="40" x2="860" y2="320" class="line" />
+
+
+<!-- Messages -->
+<g>
+<path d="M100 70 L240 70" stroke="#0b5cff" stroke-width="2" fill="none" />
+<polygon points="240,66 248,70 240,74" class="arrow" />
+<text x="120" y="62" class="note">MovieMarkedForDeletion</text>
+</g>
+
+
+<g>
+<path d="M280 110 L440 110" stroke="#0b5cff" stroke-width="2" fill="none" />
+<polygon points="440,106 448,110 440,114" class="arrow" />
+<text x="300" y="102" class="note">ShowCancelled</text>
+</g>
+
+
+<g>
+<path d="M480 150 L640 150" stroke="#0b5cff" stroke-width="2" fill="none" />
+<polygon points="640,146 648,150 640,154" class="arrow" />
+<text x="500" y="142" class="note">RefundRequested</text>
+</g>
+
+
+<g>
+<path d="M680 190 L840 190" stroke="#0b5cff" stroke-width="2" fill="none" />
+<polygon points="840,186 848,190 840,194" class="arrow" />
+<text x="700" y="182" class="note">RefundProcessed</text>
+</g>
+
+
+<g>
+<path d="M480 230 L240 230" stroke="#10b981" stroke-width="2" fill="none" />
+<polygon points="240,226 232,230 240,234" class="arrow" />
+<text x="300" y="222" class="note">BookingCancelled / SeatsReleased</text>
+</g>
+
+
+<g>
+<path d="M480 270 L840 270" stroke="#0b5cff" stroke-width="2" fill="none" />
+<polygon points="840,266 848,270 840,274" class="arrow" />
+<text x="500" y="262" class="note">NotifyUser (Cancellation + Refund)</text>
+</g>
+
+
+<!-- Notes -->
+<rect x="20" y="300" width="860" height="50" rx="6" fill="#f8fafc" stroke="#e2e8f0" />
+<text x="32" y="320" class="note">Sequence: Catalog -> ShowService (emit ShowCancelled) -> BookingService (RefundRequested) -> Payment -> BookingCancelled -> Notification</text>
+</svg>
