@@ -1,5 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_PAYMENT_URL ||
+  "https://eventura-payment-service-d81i.vercel.app/api";
+
 const getAuthHeaders = () => {
   const authData = JSON.parse(localStorage.getItem("auth"));
   const token = authData?.token;
@@ -10,17 +14,14 @@ export const createPaymentOrder = createAsyncThunk(
   "payment/createOrder",
   async (payload, { rejectWithValue }) => {
     try {
-      const res = await fetch(
-        "http://localhost:4000/api/payments/create-order",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...getAuthHeaders(),
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/payments/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create order");
 
@@ -35,7 +36,7 @@ export const verifyPayment = createAsyncThunk(
   "payment/verify",
   async (payload, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:4000/api/payments/verify", {
+      const res = await fetch(`${API_BASE_URL}/payments/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
