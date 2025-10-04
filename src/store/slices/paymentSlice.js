@@ -4,6 +4,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_PAYMENT_URL ||
   "https://eventura-payment-service-d81i.vercel.app/api";
 
+console.log(API_BASE_URL, "API_BASE_URL");
 const getAuthHeaders = () => {
   const authData = JSON.parse(localStorage.getItem("auth"));
   const token = authData?.token;
