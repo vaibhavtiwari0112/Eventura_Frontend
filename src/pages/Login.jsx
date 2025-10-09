@@ -3,8 +3,8 @@ import { useDispatch } from "react-redux";
 import { setCredentials } from "../store/slices/authSlice";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiRequest } from "../utils/api";
+import { formatOverlayMessage } from "../utils/overlayMessageUtil";
 
-// overlays
 import LoadingOverlay from "../components/common/LoadingOverlay";
 import SuccessOverlay from "../components/common/SuccessOverlay";
 import ErrorOverlay from "../components/common/ErrorOverlay";
@@ -80,7 +80,7 @@ export default function Login() {
       }, 1500); // auto-redirect after success
     } catch (err) {
       console.error("Login failed:", err.message);
-      setErrorMsg(err.message || "Invalid email or password");
+      setErrorMsg(formatOverlayMessage(err.message, "login"));
       setStatus("error");
     }
   }

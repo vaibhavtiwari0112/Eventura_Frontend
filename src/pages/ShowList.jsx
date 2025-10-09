@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { MapPin, Clock, IndianRupee } from "lucide-react";
 import { fetchShowsByMovie, clearShows } from "../store/slices/showSlice";
 import LoadingOverlay from "../components/common/LoadingOverlay";
+import { formatOverlayMessage } from "../utils/overlayMessageUtil";
 
 export default function ShowList() {
   const { id, title } = useParams();
@@ -12,12 +13,8 @@ export default function ShowList() {
   const { list: shows, status, error } = useSelector((s) => s.shows);
 
   useEffect(() => {
-    if (id) {
-      dispatch(fetchShowsByMovie(id));
-    }
-    return () => {
-      dispatch(clearShows());
-    };
+    if (id) dispatch(fetchShowsByMovie(id));
+    return () => dispatch(clearShows());
   }, [dispatch, id]);
 
   const BackButton = () => (
@@ -31,26 +28,30 @@ export default function ShowList() {
     </button>
   );
 
+  // 🌀 Loading overlay
+  if (status === "loading") {
+    return <LoadingOverlay message="Fetching available shows..." />;
+  }
+
+  // ❌ Error overlay
+  if (status === "failed") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <p className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3">
+          {formatOverlayMessage(error, "showlist")}
+        </p>
+        <BackButton />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-10 relative">
       <h2 className="text-2xl font-bold text-navy-700 dark:text-white mb-8">
         🎬 Available Shows for {title}
       </h2>
 
-      {/* Loading Overlay */}
-      {status === "loading" && (
-        <LoadingOverlay type="loading" message="Fetching shows..." />
-      )}
-
-      {/* Error Overlay */}
-      {status === "failed" && (
-        <LoadingOverlay
-          type="error"
-          message={error || "Something went wrong while fetching shows."}
-        />
-      )}
-
-      {/* No shows available */}
+      {/* No shows */}
       {status === "succeeded" && shows.length === 0 && (
         <div className="text-center py-10 bg-gray-50 dark:bg-navy-900 rounded-2xl shadow-md relative z-10">
           <p className="text-lg font-semibold text-navy-700 dark:text-gray-100 mb-2">
@@ -73,20 +74,16 @@ export default function ShowList() {
                          border-l-4 border-navy-500 dark:border-navy-700 
                          hover:shadow-lg transition"
             >
-              {/* Theatre + Location */}
               <h3 className="text-lg font-semibold text-navy-700 dark:text-gray-100">
                 {show.theatreName}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
                 <MapPin size={14} /> {show.location}
               </p>
-
-              {/* Hall Info */}
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 {show.hallName}
               </p>
 
-              {/* Timings + Price */}
               <div className="flex flex-wrap gap-3">
                 <Link
                   to={`/movie/${id}/shows/${show.id}/book`}

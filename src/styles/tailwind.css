@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- Global fixes --- */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overscroll-behavior: none; /* prevents the white overscroll flash */
+  background-color: #f9fafb; /* light mode background */
+  transition: background-color 0.3s ease;
+}
+
+html.dark,
+body.dark {
+  background-color: #0f172a; /* your dark mode background (navy-900) */
+}
+
+* {
+  box-sizing: border-box;
+}
+
 /* small helper */
 .seat {
   @apply w-8 h-8 flex items-center justify-center rounded-sm cursor-pointer select-none;

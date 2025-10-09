@@ -1,5 +1,5 @@
-// utils/api.js
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/";
 
 export const apiRequest = async (
   endpoint,
@@ -15,25 +15,40 @@ export const apiRequest = async (
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  console.log("headers --  ", headers);
+  const url = `${BASE_URL}${endpoint}`;
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  // Handle non-2xx responses
-  if (!res.ok) {
-    let errorMsg;
-    try {
-      const errorData = await res.json();
-      errorMsg = errorData.message || JSON.stringify(errorData);
-    } catch {
-      errorMsg = await res.text();
-    }
-    throw new Error(errorMsg || "Request failed");
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (networkErr) {
+    throw new Error(
+      "Network request failed. Please check your internet connection."
+    );
   }
 
-  return res.json();
+  // 🔴 Non-2xx responses
+  if (!res.ok) {
+    let errorMsg = `Request failed (${res.status})`;
+    try {
+      const data = await res.json();
+      if (data?.message) errorMsg = data.message;
+      else if (typeof data === "object") errorMsg = JSON.stringify(data);
+    } catch {
+      const text = await res.text();
+      if (text) errorMsg = text;
+    }
+
+    throw new Error(`${errorMsg} (Status: ${res.status})`);
+  }
+
+  // ✅ Successful response
+  try {
+    return await res.json();
+  } catch {
+    throw new Error("Invalid JSON response from server");
+  }
 };

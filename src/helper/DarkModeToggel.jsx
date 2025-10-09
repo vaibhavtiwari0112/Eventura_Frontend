@@ -1,28 +1,41 @@
 import { useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
 
 export default function DarkModeToggle() {
-  const [dark, setDark] = useState(
-    () => localStorage.getItem("theme") === "dark"
-  );
+  const getAutoDark = () => {
+    const hour = new Date().getHours();
+    return hour >= 19 || hour < 7; // Dark from 7PM–7AM
+  };
 
+  const [dark, setDark] = useState(getAutoDark);
+
+  // Apply theme on change
   useEffect(() => {
     if (dark) {
       document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
     }
   }, [dark]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const shouldBeDark = getAutoDark();
+      setDark((prev) => (prev !== shouldBeDark ? shouldBeDark : prev));
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="px-3 py-1 rounded-full border text-sm font-medium 
-                 text-navy-700 dark:text-white 
-                 hover:bg-navy-100 dark:hover:bg-navy-800"
+      className="p-2 rounded-full border transition-all 
+                 text-gray-700 dark:text-yellow-300 
+                 hover:bg-gray-100 dark:hover:bg-gray-800"
+      aria-label="Toggle dark mode"
     >
-      {dark ? "Light Mode" : "Dark Mode"}
+      {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </button>
   );
 }

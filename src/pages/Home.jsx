@@ -5,6 +5,7 @@ import { fetchMovies } from "../store/slices/moviesSlice";
 import LoadingOverlay from "../components/common/LoadingOverlay";
 import SuccessOverlay from "../components/common/SuccessOverlay";
 import ErrorOverlay from "../components/common/ErrorOverlay";
+import { formatOverlayMessage } from "../utils/overlayMessageUtil";
 
 const genres = [
   "Action",
@@ -184,7 +185,7 @@ export default function Home() {
       {status === "loading" && <LoadingOverlay />}
       {status === "succeeded" && <SuccessOverlay message="Movies loaded!" />}
       {status === "failed" && (
-        <ErrorOverlay message={error || "Failed to load movies"} />
+        <ErrorOverlay message={formatOverlayMessage(error, "home")} />
       )}
     </div>
   );

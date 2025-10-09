@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { apiRequest } from "../utils/api";
 import LoadingOverlay from "../components/common/LoadingOverlay"; // ✅ Import overlay
+import { formatOverlayMessage } from "../utils/overlayMessageUtil";
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -84,7 +85,7 @@ export default function Signup() {
     } catch (err) {
       console.error("Signup failed:", err.message);
       setStatus("error");
-      setOverlayMessage(err.message || "Signup failed. Try again.");
+      setOverlayMessage(formatOverlayMessage(err.message, "signup"));
       toast.error(err.message || "Signup failed");
 
       setTimeout(() => {
