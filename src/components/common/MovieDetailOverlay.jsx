@@ -29,15 +29,17 @@ export default function MovieDetailOverlay({ movie, onClose }) {
 
         {/* Poster */}
         <div className="md:w-1/2 bg-gray-100 dark:bg-navy-800 flex items-center justify-center">
-          {movie.posterUrl ? (
-            <img
-              src={movie.posterUrl}
-              alt={movie.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Film className="text-gray-400 dark:text-gray-500 w-16 h-16" />
-          )}
+          <div className="w-3/4 h-[358px] overflow-hidden rounded-lg shadow-md bg-gray-200 dark:bg-navy-700 flex items-center justify-center">
+            {movie.posterUrl ? (
+              <img
+                src={movie.posterUrl}
+                alt={movie.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Film className="text-gray-400 dark:text-gray-500 w-16 h-16" />
+            )}
+          </div>
         </div>
 
         {/* Details */}
@@ -53,7 +55,7 @@ export default function MovieDetailOverlay({ movie, onClose }) {
 
             {/* Rating */}
             <div className="flex items-center mb-4">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: movie?.rating || 4 }).map((_, i) => (
                 <Star
                   key={i}
                   className="w-5 h-5 text-yellow-400 fill-yellow-400"

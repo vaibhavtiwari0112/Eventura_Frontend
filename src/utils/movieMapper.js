@@ -1,4 +1,3 @@
-// utils/movieMapper.js
 export const mapMovies = (apiMovies) => {
   return apiMovies.map((m) => ({
     id: m.id,
@@ -6,6 +5,7 @@ export const mapMovies = (apiMovies) => {
     duration: m.durationMinutes,
     description: m.description,
     posterUrl: m.posterUrl,
-    genres: m.genres, // array
+    genres: m.genres,
+    rating: m.rating,
   }));
 };
