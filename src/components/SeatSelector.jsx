@@ -15,6 +15,11 @@ export default function SeatSelector({
 
   return (
     <div className="inline-block">
+      <div className="mt-6 text-center">
+        <div className="h-2 w-2/3 mx-auto bg-gray-300 rounded-full" />
+        <p className="text-xs text-gray-500 mt-1">SCREEN</p>
+      </div>
+
       <div className="flex justify-center mb-2">
         <div className="w-6" />
         {Array.from({ length: maxCols }).map((_, c) => (
@@ -89,11 +94,6 @@ export default function SeatSelector({
           })}
         </div>
       ))}
-
-      <div className="mt-6 text-center">
-        <div className="h-2 w-2/3 mx-auto bg-gray-300 rounded-full" />
-        <p className="text-xs text-gray-500 mt-1">SCREEN</p>
-      </div>
     </div>
   );
 }

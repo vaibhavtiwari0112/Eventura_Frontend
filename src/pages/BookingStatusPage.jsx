@@ -3,6 +3,7 @@ import { useParams, useLocation, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchBookingStatus } from "../store/slices/bookingSlice";
 import { CheckCircle2, XCircle, Clock, ArrowLeft, Ticket } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react"; // ✅ Import QR Code component
 
 export default function BookingStatusPage() {
   const { id } = useParams();
@@ -74,12 +75,13 @@ export default function BookingStatusPage() {
         </div>
       </div>
 
-      {/* Booking Details */}
-      <div className="bg-white dark:bg-navy-900 rounded-2xl shadow-lg p-6 relative border-t-4 border-navy-500 dark:border-navy-700">
-        <h3 className="text-xl font-semibold text-navy-700 dark:text-white flex items-center gap-2 mb-4">
-          <Ticket size={20} /> Booking Details
-        </h3>
-        <div className="space-y-2 text-gray-700 dark:text-gray-300">
+      {/* Booking Details Card */}
+      <div className="bg-white dark:bg-navy-900 rounded-2xl shadow-lg p-6 relative border-t-4 border-navy-500 dark:border-navy-700 flex justify-between items-start">
+        {/* Left: Ticket Info */}
+        <div className="space-y-2 text-gray-700 dark:text-gray-300 flex-1 pr-4">
+          <h3 className="text-xl font-semibold text-navy-700 dark:text-white flex items-center gap-2 mb-4">
+            <Ticket size={20} /> Booking Details
+          </h3>
           <p>
             <span className="font-medium">Booking ID:</span> {booking.id}
           </p>
@@ -109,6 +111,25 @@ export default function BookingStatusPage() {
             Booking Time: {booking.bookedAt || "-"}
           </p>
         </div>
+
+        {/* Right: QR Code for Confirmed Bookings */}
+        {effectiveStatus === "confirmed" && (
+          <div className="flex flex-col items-center justify-center bg-gray-100 dark:bg-navy-800 rounded-xl p-4 shadow-inner">
+            <QRCodeCanvas
+              value={`BookingID: ${booking.id}\nMovie: ${
+                booking.movieTitle
+              }\nSeats: ${booking.seats.join(", ")}\nShowtime: ${booking.time}`}
+              size={120}
+              bgColor="#FFFFFF"
+              fgColor="#000000"
+              level="H"
+              includeMargin={true}
+            />
+            <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+              Scan for details
+            </p>
+          </div>
+        )}
       </div>
 
       {/* CTA Buttons */}

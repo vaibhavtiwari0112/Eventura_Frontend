@@ -5,7 +5,6 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import MovieDetails from "./pages/MovieDetails";
-import BookingConfirmation from "./pages/BookingConfirmation";
 import Profile from "./pages/Profile";
 import NotificationBanner from "./components/NotificationBanner";
 import ProtectedRoute from "./components/ProtectedRoutes";

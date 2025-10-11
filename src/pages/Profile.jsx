@@ -11,6 +11,7 @@ import {
   MapPin,
   Film,
 } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react"; // ✅ QR Code import
 
 export default function Profile() {
   const user = useSelector((s) => s.auth.user);
@@ -172,6 +173,25 @@ export default function Profile() {
                         <span>Total Paid:</span> ₹{h.amount}
                       </p>
                     </div>
+
+                    {/* ✅ QR Code for confirmed/completed bookings */}
+                    {h.status === "confirmed" && (
+                      <div className="flex flex-col items-center justify-center mt-4 bg-gray-100 dark:bg-navy-700 rounded-xl p-4 shadow-inner">
+                        <QRCodeCanvas
+                          value={`BookingID: ${h.id}\nMovie: ${
+                            h.movieTitle
+                          }\nSeats: ${h.seats.join(", ")}\nShowtime: ${h.time}`}
+                          size={120}
+                          bgColor="#FFFFFF"
+                          fgColor="#000000"
+                          level="H"
+                          includeMargin={true}
+                        />
+                        <p className="text-xs mt-2 text-gray-500 dark:text-gray-300">
+                          Scan for booking details
+                        </p>
+                      </div>
+                    )}
 
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       Booked at: {new Date(h.bookedAt).toLocaleString()}

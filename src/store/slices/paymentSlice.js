@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_PAYMENT_URL ||
+  import.meta.env.VITE_API_PAYMENT_URL?.replace(/\/$/, "") ||
   "https://eventura-payment-service-d81i.vercel.app/api";
 
 console.log(API_BASE_URL, "API_BASE_URL");

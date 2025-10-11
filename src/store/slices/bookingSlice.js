@@ -4,7 +4,6 @@ import { apiRequest } from "../../utils/api";
 
 // ------------------- Thunks -------------------
 
-// Explicit lock seats
 export const lockSeats = createAsyncThunk(
   "booking/lockSeats",
   async (

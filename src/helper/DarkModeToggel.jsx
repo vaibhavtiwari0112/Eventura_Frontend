@@ -35,7 +35,7 @@ export default function DarkModeToggle() {
                  hover:bg-gray-100 dark:hover:bg-gray-800"
       aria-label="Toggle dark mode"
     >
-      {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      {dark ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
     </button>
   );
 }
