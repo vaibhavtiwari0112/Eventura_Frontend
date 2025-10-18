@@ -121,6 +121,7 @@ export const fetchUserBookings = createAsyncThunk(
           id: b.id,
           movieTitle: b.movieTitle || "Unknown",
           hall: b.hallName || "Hall",
+          hallId: b.hallId,
           location: b.location || "-",
           time: timeIST,
           seats: b.seatIds || [],
@@ -155,6 +156,27 @@ export const fetchBookingStatus = createAsyncThunk(
       return res.data ?? res; // { id, status }
     } catch (err) {
       return rejectWithValue(err.message || "Failed to fetch booking status");
+    }
+  }
+);
+
+// Cancel booking
+export const cancelBooking = createAsyncThunk(
+  "booking/cancel",
+  async ({ bookingId, hallId, reason }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth?.token || null;
+      const res = await apiRequest(
+        `bookings/${bookingId}/cancel?hallId=${hallId}&reason=${
+          reason || "user_cancelled"
+        }`,
+        "POST",
+        null,
+        token
+      );
+      return res.data ?? res;
+    } catch (err) {
+      return rejectWithValue(err.message || "Failed to cancel booking");
     }
   }
 );
@@ -237,7 +259,6 @@ const bookingSlice = createSlice({
         s.loading = false;
         s.error = action.payload || action.error.message;
       })
-
       // Fetch booking status
       .addCase(fetchBookingStatus.fulfilled, (s, action) => {
         const { id, status } = action.payload;
@@ -245,6 +266,15 @@ const bookingSlice = createSlice({
       })
       .addCase(fetchBookingStatus.rejected, (s, action) => {
         s.error = action.payload || action.error.message;
+      })
+      .addCase(cancelBooking.fulfilled, (state, action) => {
+        const cancelled = action.payload;
+        state.bookings = state.bookings.map((b) =>
+          b.id === cancelled.id ? { ...b, status: "cancelled" } : b
+        );
+      })
+      .addCase(cancelBooking.rejected, (state, action) => {
+        console.error("Cancel booking failed:", action.payload);
       });
   },
 });

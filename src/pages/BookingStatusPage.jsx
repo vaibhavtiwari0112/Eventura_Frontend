@@ -108,7 +108,17 @@ export default function BookingStatusPage() {
             Total Amount: ₹{booking.amount || 0}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Booking Time: {booking.bookedAt || "-"}
+            Booking Time:{" "}
+            {booking.bookedAt
+              ? new Date(booking.bookedAt).toLocaleString("en-IN", {
+                  weekday: "short",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-"}
           </p>
         </div>
 

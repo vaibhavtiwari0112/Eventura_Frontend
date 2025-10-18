@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchUserBookings } from "../store/slices/bookingSlice";
+import { cancelBooking, fetchUserBookings } from "../store/slices/bookingSlice";
 import {
   User,
   Mail,
@@ -11,22 +11,51 @@ import {
   MapPin,
   Film,
 } from "lucide-react";
-import { QRCodeCanvas } from "qrcode.react"; // ✅ QR Code import
+import { QRCodeCanvas } from "qrcode.react";
+import ConfirmCancelOverlay from "../components/common/ConfirmCancelOverlay";
+import LoadingOverlay from "../components/common/LoadingOverlay";
+import SuccessOverlay from "../components/common/SuccessOverlay";
+import ErrorOverlay from "../components/common/ErrorOverlay";
 
 export default function Profile() {
   const user = useSelector((s) => s.auth.user);
   const { bookings, loading } = useSelector((s) => s.booking);
   const dispatch = useDispatch();
-  const [expandedId, setExpandedId] = useState(null);
 
+  const [expandedId, setExpandedId] = useState(null);
+  const [cancelBookingData, setCancelBookingData] = useState(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // overlays for cancel flow
+  const [overlayState, setOverlayState] = useState(null); // "loading" | "success" | "error"
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // ✅ Fetch bookings once
   useEffect(() => {
-    if (user?.id) {
-      dispatch(fetchUserBookings(user.id));
+    if (user?.id && !dataLoaded) {
+      dispatch(fetchUserBookings(user.id)).then(() => setDataLoaded(true));
     }
-  }, [dispatch, user]);
+  }, [dispatch, user?.id, dataLoaded]);
 
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
+  };
+
+  const handleCancelBooking = async ({ bookingId, hallId, reason }) => {
+    setOverlayState("loading");
+    try {
+      await dispatch(cancelBooking({ bookingId, hallId, reason })).unwrap();
+      setOverlayState("success");
+
+      // Auto-close success overlay & refresh bookings
+      setTimeout(() => {
+        setOverlayState(null);
+        dispatch(fetchUserBookings(user.id));
+      }, 2000);
+    } catch (err) {
+      setErrorMsg(err?.message || "Failed to cancel booking");
+      setOverlayState("error");
+    }
   };
 
   const statusGradients = {
@@ -54,7 +83,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Account Details */}
+      {/* Account Info */}
       <div className="bg-white dark:bg-navy-900 rounded-2xl shadow-md p-5 mb-6">
         <h3 className="text-lg font-semibold text-navy-700 dark:text-gray-100 mb-3 flex items-center gap-2">
           <User size={18} /> Account Info
@@ -75,7 +104,7 @@ export default function Profile() {
           <Ticket size={18} /> Booking History
         </h3>
 
-        {loading ? (
+        {loading && !dataLoaded ? (
           <div className="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-navy-800 p-4 rounded-xl text-center shadow-inner">
             Loading bookings...
           </div>
@@ -106,7 +135,8 @@ export default function Profile() {
                   <div className="flex items-center gap-3">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold shadow-md ${
-                        statusGradients[h.status] || statusGradients.default
+                        statusGradients[h.status?.toLowerCase()] ||
+                        statusGradients.default
                       }`}
                     >
                       {h.status || "Pending"}
@@ -174,7 +204,6 @@ export default function Profile() {
                       </p>
                     </div>
 
-                    {/* ✅ QR Code for confirmed/completed bookings */}
                     {h.status === "confirmed" && (
                       <div className="flex flex-col items-center justify-center mt-4 bg-gray-100 dark:bg-navy-700 rounded-xl p-4 shadow-inner">
                         <QRCodeCanvas
@@ -196,6 +225,23 @@ export default function Profile() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       Booked at: {new Date(h.bookedAt).toLocaleString()}
                     </p>
+
+                    {["PENDING", "CONFIRMED"].includes(
+                      h.status?.toUpperCase()
+                    ) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCancelBookingData({
+                            bookingId: h.id,
+                            hallId: h.hallId,
+                          });
+                        }}
+                        className="mt-3 w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-2 rounded-lg shadow hover:from-red-700 hover:to-red-800 transition"
+                      >
+                        Cancel Booking
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -203,6 +249,34 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {/* Cancel Booking Flow Overlays */}
+      {cancelBookingData && (
+        <ConfirmCancelOverlay
+          onConfirm={(reason) => {
+            handleCancelBooking({
+              bookingId: cancelBookingData.bookingId,
+              hallId: cancelBookingData.hallId,
+              reason,
+            });
+            setCancelBookingData(null);
+          }}
+          onClose={() => setCancelBookingData(null)}
+        />
+      )}
+
+      {overlayState === "loading" && (
+        <LoadingOverlay message="Cancelling booking..." />
+      )}
+      {overlayState === "success" && (
+        <SuccessOverlay message="Booking cancelled successfully!" />
+      )}
+      {overlayState === "error" && (
+        <ErrorOverlay
+          message={errorMsg}
+          onClose={() => setOverlayState(null)}
+        />
+      )}
     </div>
   );
 }

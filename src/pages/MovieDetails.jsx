@@ -19,6 +19,7 @@ import {
 } from "../store/slices/bookingSlice";
 import SuccessOverlay from "../components/common/SuccessOverlay";
 import ErrorOverlay from "../components/common/ErrorOverlay";
+import LoadingOverlay from "../components/common/LoadingOverlay";
 
 export default function MovieDetails() {
   const { id, showId } = useParams();
@@ -67,18 +68,29 @@ export default function MovieDetails() {
 
   /** ─────────── LOAD INITIAL SEATMAP ─────────── */
   useEffect(() => {
-    if (showDetails && !showDetails.error) {
-      dispatch(
+    if (!showDetails?.hallId) return;
+
+    let cancelled = false;
+    const fetchSeats = async () => {
+      if (cancelled) return;
+      await dispatch(
         fetchSeatMap({
           movieId: id,
           hallId: showDetails.hallId,
           showTime: showDetails.startTime,
         })
       );
-      dispatch(fetchSeatmap({ showId })); // 🔥 fetch from Booking Service (Redis)
-    }
-    return () => dispatch(clearSeats());
-  }, [dispatch, id, showDetails, showId]);
+      if (cancelled) return;
+      await dispatch(fetchSeatmap({ showId }));
+    };
+
+    fetchSeats();
+
+    return () => {
+      cancelled = true;
+      dispatch(clearSeats());
+    };
+  }, [dispatch, id, showId, showDetails?.hallId]);
 
   /** ─────────── HANDLE SEAT CLICK ─────────── */
   function handleSeatClick(seat) {
@@ -130,6 +142,85 @@ export default function MovieDetails() {
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
+  }
+
+  /** ─────────── LOCK SEATS (with loading overlay + complete booking details) ─────────── */
+  async function handleLock() {
+    if (selected.length === 0) return;
+
+    try {
+      // Show loading overlay
+      setOverlay({
+        visible: true,
+        type: "loading",
+        message: "Locking your seats, please wait...",
+      });
+
+      const bookingPayload = {
+        userId: currentUserIdUUID,
+        showId,
+        seatIds: selected,
+        amount: finalAmount,
+        hallId: showDetails?.hallId,
+        status: "LOCKED",
+      };
+
+      // Step 1: Create booking (auto-locks seats)
+      const bookingAction = await dispatch(createBooking(bookingPayload));
+
+      if (!createBooking.fulfilled.match(bookingAction)) {
+        const err = bookingAction.payload || bookingAction.error?.message;
+        setOverlay({
+          visible: true,
+          type: "error",
+          message: "❌ Failed to lock seats: " + (err || ""),
+        });
+        return;
+      }
+
+      const bookingId = bookingAction.payload;
+
+      // Step 2: Prepare enriched booking details for redirect
+      const bookingData = {
+        id: bookingId,
+        movieTitle: showDetails.movieTitle,
+        hall: showDetails.hallName, // 🏟️ Fix: include hall name
+        location: showDetails.location,
+        time: showDetails.time,
+        seats: selected,
+        amount: finalAmount,
+        status: "LOCKED",
+        bookedAt: new Date().toISOString(), // 🕒 Fix: include booking time
+      };
+
+      // Step 3: Show success overlay
+      setOverlay({
+        visible: true,
+        type: "success",
+        message:
+          "✅ Seats locked! Complete payment before 6 hrs of the show to confirm.",
+      });
+
+      // Step 4: Refresh seatmap & redirect
+      setSelected([]);
+      dispatch(fetchSeatmap({ showId }));
+
+      setTimeout(() => {
+        navigate(`/booking/${bookingId}`, { state: { booking: bookingData } });
+      }, 1500);
+    } catch (err) {
+      setOverlay({
+        visible: true,
+        type: "error",
+        message: "❌ Something went wrong while locking seats.",
+      });
+    } finally {
+      setTimeout(() => {
+        setOverlay((prev) =>
+          prev.type === "loading" ? { ...prev, visible: false } : prev
+        );
+      }, 2000);
+    }
   }
 
   /** ─────────── PAYMENT FLOW ─────────── */
@@ -231,7 +322,7 @@ export default function MovieDetails() {
   useEffect(() => {
     if (!showId) return;
     const fetchSeats = () => dispatch(fetchSeatmap({ showId }));
-    fetchSeats();
+    // fetchSeats();
     const interval = setInterval(() => {
       if (!document.hidden) fetchSeats();
     }, 5000);
@@ -414,6 +505,9 @@ export default function MovieDetails() {
       )}
       {overlay.visible && overlay.type === "error" && (
         <ErrorOverlay message={overlay.message} />
+      )}
+      {overlay.visible && overlay.type === "loading" && (
+        <LoadingOverlay message={overlay.message} />
       )}
     </>
   );

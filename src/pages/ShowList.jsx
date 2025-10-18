@@ -28,12 +28,10 @@ export default function ShowList() {
     </button>
   );
 
-  // 🌀 Loading overlay
   if (status === "loading") {
     return <LoadingOverlay message="Fetching available shows..." />;
   }
 
-  // ❌ Error overlay
   if (status === "failed") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
