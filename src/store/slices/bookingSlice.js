@@ -181,6 +181,26 @@ export const cancelBooking = createAsyncThunk(
   }
 );
 
+export const unlockBooking = createAsyncThunk(
+  "booking/unlock",
+  async ({ bookingId, hallId, reason }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth?.token || null;
+      const res = await apiRequest(
+        `bookings/${bookingId}/unlock?hallId=${hallId}&reason=${
+          reason || "payment_failed_or_abandoned"
+        }`,
+        "POST",
+        null,
+        token
+      );
+      return res.data ?? res;
+    } catch (err) {
+      return rejectWithValue(err.message || "Failed to unlock booking");
+    }
+  }
+);
+
 // ------------------- Slice -------------------
 const bookingSlice = createSlice({
   name: "booking",
@@ -275,6 +295,15 @@ const bookingSlice = createSlice({
       })
       .addCase(cancelBooking.rejected, (state, action) => {
         console.error("Cancel booking failed:", action.payload);
+      })
+      .addCase(unlockBooking.fulfilled, (state, action) => {
+        const unlocked = action.payload;
+        state.bookings = state.bookings.map((b) =>
+          b.id === unlocked.id ? { ...b, status: "cancelled" } : b
+        );
+      })
+      .addCase(unlockBooking.rejected, (state, action) => {
+        console.error("Unlock booking failed:", action.payload);
       });
   },
 });

@@ -16,6 +16,7 @@ import {
   lockSeats,
   createBooking,
   fetchSeatmap,
+  unlockBooking,
 } from "../store/slices/bookingSlice";
 import SuccessOverlay from "../components/common/SuccessOverlay";
 import ErrorOverlay from "../components/common/ErrorOverlay";
@@ -104,31 +105,6 @@ export default function MovieDetails() {
     );
   }
 
-  /** ─────────── LOCK SEATS ─────────── */
-  async function handleLock() {
-    if (selected.length === 0) return;
-    try {
-      const payload = {
-        showId,
-        seatIds: selected,
-        userId: currentUserIdUUID,
-        hallId: showDetails?.hallId,
-      };
-      const resultAction = await dispatch(lockSeats(payload));
-
-      if (lockSeats.fulfilled.match(resultAction)) {
-        showOverlay("success", "✅ Seats locked successfully!");
-        setSelected([]);
-        dispatch(fetchSeatmap({ showId })); // refresh redis-backed seatmap
-      } else {
-        const err = resultAction.payload || resultAction.error?.message;
-        showOverlay("error", "❌ Failed to lock seats: " + (err || ""));
-      }
-    } catch (err) {
-      showOverlay("error", "❌ Failed to lock seats.");
-    }
-  }
-
   /** ─────────── RAZORPAY SCRIPT ─────────── */
   function loadRazorpayScript() {
     return new Promise((resolve) => {
@@ -142,6 +118,46 @@ export default function MovieDetails() {
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
+  }
+
+  /** ─────────── UNLOCK BOOKING (after payment cancel or fail) ─────────── */
+  async function handleUnlockBooking(
+    bookingId,
+    hallId,
+    reason = "payment_failed_or_abandoned"
+  ) {
+    try {
+      setOverlay({
+        visible: true,
+        type: "loading",
+        message: "Releasing your seats...",
+      });
+
+      const result = await dispatch(
+        unlockBooking({
+          bookingId,
+          hallId,
+          reason,
+        })
+      );
+
+      if (unlockBooking.fulfilled.match(result)) {
+        showOverlay("success", "Seats unlocked successfully.");
+        setSelected([]);
+        await dispatch(fetchSeatmap({ showId }));
+      } else {
+        console.error("Unlock booking failed:", result.payload || result.error);
+        showOverlay("error", "Failed to unlock booking.");
+      }
+    } catch (err) {
+      console.error("Unlock booking error:", err);
+      showOverlay("error", "Unlock booking failed.");
+    } finally {
+      setTimeout(
+        () => setOverlay({ visible: false, type: "", message: "" }),
+        800
+      );
+    }
   }
 
   /** ─────────── LOCK SEATS (with loading overlay + complete booking details) ─────────── */
@@ -228,12 +244,25 @@ export default function MovieDetails() {
     setPayOpen(false);
     if (result.status !== "success") return;
 
+    let bookingId = null;
     try {
+      setOverlay({
+        visible: true,
+        type: "loading",
+        message: "Preparing payment, please wait...",
+      });
+
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded || !window.Razorpay)
         throw new Error("Razorpay SDK failed to load.");
 
-      /** Step 1: Create booking (PENDING) */
+      /** Step 1: Create booking */
+      setOverlay({
+        visible: true,
+        type: "loading",
+        message: "Creating booking...",
+      });
+
       const bookingAction = await dispatch(
         createBooking({
           userId: currentUserIdUUID,
@@ -246,9 +275,16 @@ export default function MovieDetails() {
       );
       if (!createBooking.fulfilled.match(bookingAction))
         throw new Error("Booking creation failed");
-      const bookingId = bookingAction.payload;
 
-      /** Step 2: Create Razorpay order */
+      bookingId = bookingAction.payload;
+
+      /** Step 2: Create payment order */
+      setOverlay({
+        visible: true,
+        type: "loading",
+        message: "Creating payment order...",
+      });
+
       const orderAction = await dispatch(
         createPaymentOrder({
           amount: result.breakdown.total,
@@ -259,9 +295,11 @@ export default function MovieDetails() {
       if (!createPaymentOrder.fulfilled.match(orderAction))
         throw new Error(orderAction.payload || "Order creation failed");
 
+      setOverlay({ visible: false, type: "", message: "" }); // hide before opening Razorpay
+
       const orderData = orderAction.payload;
 
-      /** Step 3: Open Razorpay */
+      // Razorpay opens
       const options = {
         key: orderData.key,
         amount: orderData.order.amount,
@@ -270,6 +308,12 @@ export default function MovieDetails() {
         description: `Booking for ${showDetails.movieTitle}`,
         order_id: orderData.order.id,
         handler: async function (response) {
+          setOverlay({
+            visible: true,
+            type: "loading",
+            message: "Verifying payment...",
+          });
+
           const verifyAction = await dispatch(
             verifyPayment({
               razorpay_order_id: response.razorpay_order_id,
@@ -281,15 +325,21 @@ export default function MovieDetails() {
             })
           );
 
+          setOverlay({ visible: false, type: "", message: "" });
+
           if (
             !verifyPayment.fulfilled.match(verifyAction) ||
             !verifyAction.payload.success
           ) {
             showOverlay("error", "❌ Payment verification failed");
+            await handleUnlockBooking(
+              bookingId,
+              showDetails?.hallId,
+              "verification_failed"
+            );
             return;
           }
 
-          /** Final booking object */
           const booking = {
             id: bookingId,
             movieTitle: showDetails.movieTitle,
@@ -308,6 +358,17 @@ export default function MovieDetails() {
             1500
           );
         },
+        modal: {
+          ondismiss: async () => {
+            if (bookingId) {
+              await handleUnlockBooking(
+                bookingId,
+                showDetails?.hallId,
+                "user_closed_payment_window"
+              );
+            }
+          },
+        },
         theme: { color: "#1e3a8a" },
       };
 
@@ -315,6 +376,13 @@ export default function MovieDetails() {
       rzp.open();
     } catch (err) {
       showOverlay("error", "❌ Payment error: " + err.message);
+      if (bookingId) {
+        await handleUnlockBooking(
+          bookingId,
+          showDetails?.hallId,
+          "payment_failed"
+        );
+      }
     }
   }
 
@@ -322,7 +390,6 @@ export default function MovieDetails() {
   useEffect(() => {
     if (!showId) return;
     const fetchSeats = () => dispatch(fetchSeatmap({ showId }));
-    // fetchSeats();
     const interval = setInterval(() => {
       if (!document.hidden) fetchSeats();
     }, 5000);
