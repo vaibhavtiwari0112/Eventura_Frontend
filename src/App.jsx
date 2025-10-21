@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoutes";
 import Footer from "./components/Footer";
 import ShowList from "./pages/ShowList";
 import BookingStatusPage from "./pages/BookingStatusPage";
+import SearchPage from "./pages/SearchPage";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
             path="/movie/:id/shows/:showId/book"
             element={<MovieDetails />}
           />
+          <Route path="/search" element={<SearchPage />} />
           <Route path="/movie/:id/:title/shows" element={<ShowList />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

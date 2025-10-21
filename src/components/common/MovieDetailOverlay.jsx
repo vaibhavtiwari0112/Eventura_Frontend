@@ -63,7 +63,7 @@ export default function MovieDetailOverlay({ movie, onClose }) {
               ))}
               {movie.rating && (
                 <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                  {movie.rating.toFixed(1)} / 5
+                  {Number(movie.rating || 0).toFixed(1)} / 5
                 </span>
               )}
             </div>
