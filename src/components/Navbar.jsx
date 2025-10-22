@@ -82,9 +82,10 @@ export default function Navbar() {
     if (matchedMovie) {
       try {
         await fetch(
-          `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/movie/${
-            matchedMovie.id
-          }/view`,
+          `${
+            import.meta.env.VITE_AUTOCOMPLETE_API ||
+            "https://eventura-search-service.vercel.app"
+          }/movie/${matchedMovie.id}/view`,
           { method: "POST" }
         );
       } catch (err) {
@@ -102,7 +103,8 @@ export default function Navbar() {
     try {
       await fetch(
         `${
-          import.meta.env.VITE_AUTOCOMPLETE_API || "http://localhost:5000"
+          import.meta.env.VITE_AUTOCOMPLETE_API ||
+          "https://eventura-search-service.vercel.app"
         }/movie/${movie.id}/view`,
         { method: "POST" }
       );
