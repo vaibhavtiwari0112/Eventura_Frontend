@@ -16,14 +16,13 @@ export default function Navbar() {
   const [loading, setLoading] = useState(false);
 
   const inputRef = useRef(null);
-  const searchRef = useRef(null); // ✅ Ref to detect outside clicks
+  const searchRef = useRef(null);
 
   const handleLogout = () => {
     dispatch(logout());
     nav("/login");
   };
 
-  // ✅ Close dropdown when clicking outside or pressing ESC
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -32,9 +31,7 @@ export default function Navbar() {
     };
 
     const handleEsc = (event) => {
-      if (event.key === "Escape") {
-        setShowDropdown(false);
-      }
+      if (event.key === "Escape") setShowDropdown(false);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -74,17 +71,46 @@ export default function Navbar() {
     return () => clearTimeout(timeout);
   }, [query]);
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = async (e) => {
     e.preventDefault();
-    if (query.trim()) {
-      nav(`/search?query=${encodeURIComponent(query)}`);
-      setShowDropdown(false);
-      setQuery("");
+    if (!query.trim()) return;
+
+    // Increment popularity if an exact match is found
+    const matchedMovie = results.find(
+      (m) => m.title.toLowerCase() === query.trim().toLowerCase()
+    );
+    if (matchedMovie) {
+      try {
+        await fetch(
+          `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/movie/${
+            matchedMovie.id
+          }/view`,
+          { method: "POST" }
+        );
+      } catch (err) {
+        console.error("Failed to increment popularity:", err);
+      }
     }
+
+    nav(`/search?query=${encodeURIComponent(query)}`);
+    setShowDropdown(false);
+    setQuery("");
   };
 
-  const handleSelectMovie = (title) => {
-    nav(`/search?query=${encodeURIComponent(title)}`);
+  const handleSelectMovie = async (movie) => {
+    // Increment popularity
+    try {
+      await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/movie/${
+          movie.id
+        }/view`,
+        { method: "POST" }
+      );
+    } catch (err) {
+      console.error("Failed to increment popularity:", err);
+    }
+
+    nav(`/search?query=${encodeURIComponent(movie.title)}`);
     setShowDropdown(false);
     setQuery("");
   };
@@ -129,7 +155,7 @@ export default function Navbar() {
               {results.map((movie) => (
                 <div
                   key={movie.id}
-                  onClick={() => handleSelectMovie(movie.title)}
+                  onClick={() => handleSelectMovie(movie)}
                   className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-navy-700"
                 >
                   <img

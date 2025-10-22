@@ -140,9 +140,9 @@ export default function SearchPage() {
             ? [movie.genres]
             : ["Other"],
           rating: Number(movie.rating) || 0,
-          poster_url:
+          posterUrl:
             movie.poster_url ||
-            "https://via.placeholder.com/300x450?text=No+Poster",
+            "https://via.placeholder.com/300x450?text=No+Poster", // <--- map here
         }));
 
         setResults(normalized);
