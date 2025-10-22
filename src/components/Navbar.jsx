@@ -35,7 +35,7 @@ export default function Navbar() {
           `${
             import.meta.env.VITE_AUTOCOMPLETE_API ||
             "https://eventura-search-service.vercel.app"
-          }?q=${encodeURIComponent(query)}`
+          }/autocomplete?q=${encodeURIComponent(query)}`
         );
         const data = await res.json();
         setResults(data?.suggestions || []); // ✅ correct mapping

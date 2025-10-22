@@ -240,149 +240,156 @@ export default function MovieDetails() {
   }
 
   /** ─────────── PAYMENT FLOW ─────────── */
+  let isPaying = false;
   async function handlePay(result) {
-    setPayOpen(false);
-    if (result.status !== "success") return;
-
-    let bookingId = null;
+    if (isPaying) return;
+    isPaying = true;
     try {
-      setOverlay({
-        visible: true,
-        type: "loading",
-        message: "Preparing payment, please wait...",
-      });
+      setPayOpen(false);
+      if (result.status !== "success") return;
 
-      const isLoaded = await loadRazorpayScript();
-      if (!isLoaded || !window.Razorpay)
-        throw new Error("Razorpay SDK failed to load.");
+      let bookingId = null;
+      try {
+        setOverlay({
+          visible: true,
+          type: "loading",
+          message: "Preparing payment, please wait...",
+        });
 
-      /** Step 1: Create booking */
-      setOverlay({
-        visible: true,
-        type: "loading",
-        message: "Creating booking...",
-      });
+        const isLoaded = await loadRazorpayScript();
+        if (!isLoaded || !window.Razorpay)
+          throw new Error("Razorpay SDK failed to load.");
 
-      const bookingAction = await dispatch(
-        createBooking({
-          userId: currentUserIdUUID,
-          showId,
-          seatIds: selected,
-          amount: result.breakdown.total,
-          hallId: showDetails?.hallId,
-          status: "PENDING",
-        })
-      );
-      if (!createBooking.fulfilled.match(bookingAction))
-        throw new Error("Booking creation failed");
+        /** Step 1: Create booking */
+        setOverlay({
+          visible: true,
+          type: "loading",
+          message: "Creating booking...",
+        });
 
-      bookingId = bookingAction.payload;
-
-      /** Step 2: Create payment order */
-      setOverlay({
-        visible: true,
-        type: "loading",
-        message: "Creating payment order...",
-      });
-
-      const orderAction = await dispatch(
-        createPaymentOrder({
-          amount: result.breakdown.total,
-          receipt: bookingId,
-          notes: { bookingId, hallId: showDetails?.hallId },
-        })
-      );
-      if (!createPaymentOrder.fulfilled.match(orderAction))
-        throw new Error(orderAction.payload || "Order creation failed");
-
-      setOverlay({ visible: false, type: "", message: "" }); // hide before opening Razorpay
-
-      const orderData = orderAction.payload;
-
-      // Razorpay opens
-      const options = {
-        key: orderData.key,
-        amount: orderData.order.amount,
-        currency: "INR",
-        name: "Eventura",
-        description: `Booking for ${showDetails.movieTitle}`,
-        order_id: orderData.order.id,
-        handler: async function (response) {
-          setOverlay({
-            visible: true,
-            type: "loading",
-            message: "Verifying payment...",
-          });
-
-          const verifyAction = await dispatch(
-            verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              paymentDocId: orderData.paymentId,
-              bookingId,
-              hallId: showDetails?.hallId,
-            })
-          );
-
-          setOverlay({ visible: false, type: "", message: "" });
-
-          if (
-            !verifyPayment.fulfilled.match(verifyAction) ||
-            !verifyAction.payload.success
-          ) {
-            showOverlay("error", "❌ Payment verification failed");
-            await handleUnlockBooking(
-              bookingId,
-              showDetails?.hallId,
-              "verification_failed"
-            );
-            return;
-          }
-
-          const booking = {
-            id: bookingId,
-            movieTitle: showDetails.movieTitle,
-            hall: showDetails.hallName,
-            location: showDetails.location,
-            time: showDetails.time,
-            seats: selected,
+        const bookingAction = await dispatch(
+          createBooking({
+            userId: currentUserIdUUID,
+            showId,
+            seatIds: selected,
             amount: result.breakdown.total,
-            bookedAt: new Date().toISOString(),
-          };
+            hallId: showDetails?.hallId,
+            status: "PENDING",
+          })
+        );
+        if (!createBooking.fulfilled.match(bookingAction))
+          throw new Error("Booking creation failed");
 
-          setSelected([]);
-          showOverlay("success", "✅ Payment successful!");
-          setTimeout(
-            () => navigate(`/booking/${booking.id}`, { state: { booking } }),
-            1500
-          );
-        },
-        modal: {
-          ondismiss: async () => {
-            if (bookingId) {
+        bookingId = bookingAction.payload;
+
+        /** Step 2: Create payment order */
+        setOverlay({
+          visible: true,
+          type: "loading",
+          message: "Creating payment order...",
+        });
+
+        const orderAction = await dispatch(
+          createPaymentOrder({
+            amount: result.breakdown.total,
+            receipt: bookingId,
+            notes: { bookingId, hallId: showDetails?.hallId },
+          })
+        );
+        if (!createPaymentOrder.fulfilled.match(orderAction))
+          throw new Error(orderAction.payload || "Order creation failed");
+
+        setOverlay({ visible: false, type: "", message: "" }); // hide before opening Razorpay
+
+        const orderData = orderAction.payload;
+
+        // Razorpay opens
+        const options = {
+          key: orderData.key,
+          amount: orderData.order.amount,
+          currency: "INR",
+          name: "Eventura",
+          description: `Booking for ${showDetails.movieTitle}`,
+          order_id: orderData.order.id,
+          handler: async function (response) {
+            setOverlay({
+              visible: true,
+              type: "loading",
+              message: "Verifying payment...",
+            });
+
+            const verifyAction = await dispatch(
+              verifyPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                paymentDocId: orderData.paymentId,
+                bookingId,
+                hallId: showDetails?.hallId,
+              })
+            );
+
+            setOverlay({ visible: false, type: "", message: "" });
+
+            if (
+              !verifyPayment.fulfilled.match(verifyAction) ||
+              !verifyAction.payload.success
+            ) {
+              showOverlay("error", "❌ Payment verification failed");
               await handleUnlockBooking(
                 bookingId,
                 showDetails?.hallId,
-                "user_closed_payment_window"
+                "verification_failed"
               );
+              return;
             }
-          },
-        },
-        theme: { color: "#1e3a8a" },
-      };
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      showOverlay("error", "❌ Payment error: " + err.message);
-      if (bookingId) {
-        await handleUnlockBooking(
-          bookingId,
-          showDetails?.hallId,
-          "payment_failed"
-        );
+            const booking = {
+              id: bookingId,
+              movieTitle: showDetails.movieTitle,
+              hall: showDetails.hallName,
+              location: showDetails.location,
+              time: showDetails.time,
+              seats: selected,
+              amount: result.breakdown.total,
+              bookedAt: new Date().toISOString(),
+            };
+
+            setSelected([]);
+            showOverlay("success", "✅ Payment successful!");
+            setTimeout(
+              () => navigate(`/booking/${booking.id}`, { state: { booking } }),
+              1500
+            );
+          },
+          modal: {
+            ondismiss: async () => {
+              if (bookingId) {
+                await handleUnlockBooking(
+                  bookingId,
+                  showDetails?.hallId,
+                  "user_closed_payment_window"
+                );
+              }
+            },
+          },
+          theme: { color: "#1e3a8a" },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } catch (err) {
+        showOverlay("error", "❌ Payment error: " + err.message);
+        if (bookingId) {
+          await handleUnlockBooking(
+            bookingId,
+            showDetails?.hallId,
+            "payment_failed"
+          );
+        }
       }
+    } finally {
+      isPaying = false;
     }
   }
 
