@@ -14,12 +14,37 @@ export default function Navbar() {
   const [results, setResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const inputRef = useRef(null);
+  const searchRef = useRef(null); // ✅ Ref to detect outside clicks
 
   const handleLogout = () => {
     dispatch(logout());
     nav("/login");
   };
+
+  // ✅ Close dropdown when clicking outside or pressing ESC
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEsc);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, []);
 
   // Fetch autocomplete suggestions
   useEffect(() => {
@@ -38,7 +63,7 @@ export default function Navbar() {
           }/autocomplete?q=${encodeURIComponent(query)}`
         );
         const data = await res.json();
-        setResults(data?.suggestions || []); // ✅ correct mapping
+        setResults(data?.suggestions || []);
       } catch (err) {
         console.error("Autocomplete error:", err);
       } finally {
@@ -76,7 +101,10 @@ export default function Navbar() {
         </Link>
 
         {/* Center Search Bar */}
-        <div className="relative flex-1 max-w-md mx-4 hidden sm:flex items-center">
+        <div
+          ref={searchRef}
+          className="relative flex-1 max-w-md mx-4 hidden sm:flex items-center"
+        >
           <form onSubmit={handleSearchSubmit} className="w-full relative">
             <FiSearch
               className="absolute left-3 top-2.5 text-gray-500 dark:text-gray-300"
