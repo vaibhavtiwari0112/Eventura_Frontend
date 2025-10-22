@@ -466,7 +466,7 @@ export default function MovieDetails() {
             🎬 {showDetails.movieTitle}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            📍 {showDetails.hall}, {showDetails.location}
+            📍 {showDetails.location}
           </p>
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
             🕒 {showDetails.time}

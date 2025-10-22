@@ -15,10 +15,12 @@ import SearchPage from "./pages/SearchPage";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-navy-900 transition-colors duration-300">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-navy-900 transition-colors duration-300">
       <Navbar />
       <NotificationBanner />
-      <main className="max-w-6xl mx-auto p-4">
+
+      {/* Make main grow to fill remaining height */}
+      <main className="flex-grow max-w-6xl mx-auto p-4 w-full">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route
@@ -49,6 +51,7 @@ export default function App() {
           />
         </Routes>
       </main>
+
       <Footer />
     </div>
   );
