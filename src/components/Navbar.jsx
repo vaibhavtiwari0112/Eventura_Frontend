@@ -101,9 +101,9 @@ export default function Navbar() {
     // Increment popularity
     try {
       await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/movie/${
-          movie.id
-        }/view`,
+        `${
+          import.meta.env.VITE_AUTOCOMPLETE_API || "http://localhost:5000"
+        }/movie/${movie.id}/view`,
         { method: "POST" }
       );
     } catch (err) {
