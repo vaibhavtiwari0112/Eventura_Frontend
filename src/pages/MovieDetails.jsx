@@ -49,12 +49,11 @@ export default function MovieDetails() {
     message: "",
   });
 
-  /** Helper to show overlay */
   const showOverlay = (type, message, duration = 2000) => {
     setOverlay({ visible: true, type, message });
     setTimeout(
       () => setOverlay((prev) => ({ ...prev, visible: false })),
-      duration
+      duration,
     );
   };
 
@@ -79,7 +78,7 @@ export default function MovieDetails() {
           movieId: id,
           hallId: showDetails.hallId,
           showTime: showDetails.startTime,
-        })
+        }),
       );
       if (cancelled) return;
       await dispatch(fetchSeatmap({ showId }));
@@ -101,7 +100,7 @@ export default function MovieDetails() {
     setSelected((prev) =>
       prev.includes(seat.id)
         ? prev.filter((s) => s !== seat.id)
-        : [...prev, seat.id]
+        : [...prev, seat.id],
     );
   }
 
@@ -124,7 +123,7 @@ export default function MovieDetails() {
   async function handleUnlockBooking(
     bookingId,
     hallId,
-    reason = "payment_failed_or_abandoned"
+    reason = "payment_failed_or_abandoned",
   ) {
     try {
       setOverlay({
@@ -138,7 +137,7 @@ export default function MovieDetails() {
           bookingId,
           hallId,
           reason,
-        })
+        }),
       );
 
       if (unlockBooking.fulfilled.match(result)) {
@@ -155,7 +154,7 @@ export default function MovieDetails() {
     } finally {
       setTimeout(
         () => setOverlay({ visible: false, type: "", message: "" }),
-        800
+        800,
       );
     }
   }
@@ -233,7 +232,7 @@ export default function MovieDetails() {
     } finally {
       setTimeout(() => {
         setOverlay((prev) =>
-          prev.type === "loading" ? { ...prev, visible: false } : prev
+          prev.type === "loading" ? { ...prev, visible: false } : prev,
         );
       }, 2000);
     }
@@ -275,7 +274,7 @@ export default function MovieDetails() {
             amount: result.breakdown.total,
             hallId: showDetails?.hallId,
             status: "PENDING",
-          })
+          }),
         );
         if (!createBooking.fulfilled.match(bookingAction))
           throw new Error("Booking creation failed");
@@ -294,7 +293,7 @@ export default function MovieDetails() {
             amount: result.breakdown.total,
             receipt: bookingId,
             notes: { bookingId, hallId: showDetails?.hallId },
-          })
+          }),
         );
         if (!createPaymentOrder.fulfilled.match(orderAction))
           throw new Error(orderAction.payload || "Order creation failed");
@@ -326,7 +325,7 @@ export default function MovieDetails() {
                 paymentDocId: orderData.paymentId,
                 bookingId,
                 hallId: showDetails?.hallId,
-              })
+              }),
             );
 
             setOverlay({ visible: false, type: "", message: "" });
@@ -339,7 +338,7 @@ export default function MovieDetails() {
               await handleUnlockBooking(
                 bookingId,
                 showDetails?.hallId,
-                "verification_failed"
+                "verification_failed",
               );
               return;
             }
@@ -359,7 +358,7 @@ export default function MovieDetails() {
             showOverlay("success", "✅ Payment successful!");
             setTimeout(
               () => navigate(`/booking/${booking.id}`, { state: { booking } }),
-              1500
+              1500,
             );
           },
           modal: {
@@ -368,7 +367,7 @@ export default function MovieDetails() {
                 await handleUnlockBooking(
                   bookingId,
                   showDetails?.hallId,
-                  "user_closed_payment_window"
+                  "user_closed_payment_window",
                 );
               }
             },
@@ -384,7 +383,7 @@ export default function MovieDetails() {
           await handleUnlockBooking(
             bookingId,
             showDetails?.hallId,
-            "payment_failed"
+            "payment_failed",
           );
         }
       }
@@ -417,7 +416,7 @@ export default function MovieDetails() {
           status: isBooked ? "booked" : seat.status || "available",
           lockedBy: isLocked ? "other" : null,
         };
-      })
+      }),
     );
   }, [seatLayout, bookedSeats, lockedSeats]);
 

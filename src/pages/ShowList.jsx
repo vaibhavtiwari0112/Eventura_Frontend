@@ -28,17 +28,60 @@ export default function ShowList() {
     </button>
   );
 
+  function isAuthError(error) {
+    if (!error) return false;
+    const msg = error.toLowerCase();
+    return (
+      msg.includes("401") ||
+      msg.includes("403") ||
+      msg.includes("unauthorized") ||
+      msg.includes("forbidden")
+    );
+  }
+
   if (status === "loading") {
     return <LoadingOverlay message="Fetching available shows..." />;
   }
 
   if (status === "failed") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <p className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+        <p className="text-lg font-semibold text-red-600 dark:text-red-400 mb-4 text-center">
           {formatOverlayMessage(error, "showlist")}
         </p>
-        <BackButton />
+
+        {isAuthError(error) ? (
+          // ✅ Auth error — tell user exactly what to do
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={() => navigate("/login")}
+              className="px-5 py-2 rounded-lg font-medium shadow
+                                   bg-navy-600 text-white hover:bg-navy-700
+                                   dark:bg-navy-700 dark:hover:bg-navy-600 transition"
+            >
+              🔑 Go to Login
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="text-sm text-gray-500 dark:text-gray-400 hover:underline"
+            >
+              ← Back to Home
+            </button>
+          </div>
+        ) : (
+          // ✅ Non-auth error — offer retry + back
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={() => dispatch(fetchShowsByMovie(id))}
+              className="px-5 py-2 rounded-lg font-medium shadow
+                                   bg-navy-600 text-white hover:bg-navy-700
+                                   dark:bg-navy-700 dark:hover:bg-navy-600 transition"
+            >
+              🔄 Try Again
+            </button>
+            <BackButton />
+          </div>
+        )}
       </div>
     );
   }
